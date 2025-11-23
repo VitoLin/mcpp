@@ -3,12 +3,12 @@
   "version": "1.0.0",
   "description": "A small MCP Proxy",
   "main": "index.js",
-  "type": "module",
   "scripts": {
     "lint": "eslint ./src",
     "lint:fix": "eslint ./src --fix",
     "format:all": "prettier --ignore-path .gitignore --write \"**/*.+(js|ts|jsx|tsx)\"",
-    "format:check": "prettier --ignore-path .gitignore --check \"**/*.+(js|ts|jsx|tsx)\""
+    "format:check": "prettier --ignore-path .gitignore --check \"**/*.+(js|ts|jsx|tsx)\"",
+    "build": "npx tsc"
   },
   "keywords": [],
   "author": "",
@@ -16,5 +16,9 @@
   "dependencies": {
     "eslint": "^9.39.1",
     "prettier": "^3.6.2"
+  },
+  "devDependencies": {
+    "@types/node": "^24.10.1",
+    "typescript": "^5.9.3"
   }
 }
