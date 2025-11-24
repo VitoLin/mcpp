@@ -4,4 +4,4 @@
 node_modules/
 *-workspace/
 build/
-test.json
+test*.json

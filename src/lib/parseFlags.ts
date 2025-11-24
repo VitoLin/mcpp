@@ -1,0 +1,19 @@
+// Extracts and filters known flags from an argument array.
+// Returns an object: { flags, filteredArgs }
+export function parseFlags(
+  args: string[],
+  knownFlags: Record<string, string>
+): { flags: Record<string, string>; filteredArgs: string[] } {
+  const flags = { ...knownFlags };
+  const filteredArgs = args.filter((arg) => {
+    if (arg.startsWith("--") && arg.includes("=")) {
+      const [flag, value] = arg.slice(2).split("=", 2);
+      if (flag in flags) {
+        flags[flag] = value;
+        return false;
+      }
+    }
+    return true;
+  });
+  return { flags, filteredArgs };
+}
