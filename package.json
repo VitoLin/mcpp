@@ -15,9 +15,11 @@
     "format:all": "prettier --ignore-path .gitignore --write \"**/*.+(js|ts|jsx|tsx)\"",
     "format:check": "prettier --ignore-path .gitignore --check \"**/*.+(js|ts|jsx|tsx)\"",
     "build": "rm -rf dist && npx tsc",
+    "postbuild": "chmod +x dist/mcpwrapped.js",
     "inspector": "npx @modelcontextprotocol/inspector --config",
     "package": "npm run build && npm pack && npm i -g ./mcpwrapped-1.0.0.tgz",
-    "clean": "npm uninstall -g mcpwrapped"
+    "clean": "npm uninstall -g mcpwrapped",
+    "dev": "npm run build && npm run inspector"
   },
   "keywords": [],
   "author": "",

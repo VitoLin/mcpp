@@ -1,71 +1,82 @@
 #!/usr/bin/env node
 import { spawn } from "child_process";
-import * as readline from "readline";
-
 import { parseFlags } from "./lib/parseFlags";
+import { parseNdjsonChunk } from "./lib/ndjson";
 
-// Extract args for our proxy
+// Extract proxy flags
 const args = process.argv.slice(2);
-
-// Extract known flags
 const knownFlags = { visible_tools: "" };
 const { flags, filteredArgs } = parseFlags(args, knownFlags);
-const allowedTools = flags.visible_tools;
 
-// Start the wrapped MCP Server
+const allowedTools = flags.visible_tools;
 const realCommand = filteredArgs[0];
 const realArgs = filteredArgs.slice(1);
 
-const child = spawnWrappedMCPServer();
-
-console.error(`args: ${args}`);
-console.error(`filteredArgs: ${filteredArgs}`);
-console.error(`realCommand: ${realCommand}`);
-console.error(`visible_tools: ${allowedTools}`);
-
-// Keep stdin the same
-const clientIn = readline.createInterface({ input: process.stdin });
-clientIn.on("line", (line) => {
-  console.error(`Client sent: ${line}`);
-  child.stdin.write(line + "\n");
-});
-
-// Read from the wrapped server
-const serverIn = readline.createInterface({ input: child.stdout });
-serverIn.on("line", (line) => {
-  console.error(`Server sent: ${line}`);
-  const msg = safeParse(line);
-  if (!msg) return process.stdout.write(line + "\n");
-
-  // Filter tools if allowedTools is set and response contains a tools array
-  if (allowedTools && msg && msg.result && Array.isArray(msg.result.tools)) {
-    const allowed = allowedTools.split(",").map((t) => t.trim());
-    msg.result.tools = msg.result.tools.filter((tool: any) =>
-      allowed.includes(tool.name)
-    );
-    return process.stdout.write(JSON.stringify(msg) + "\n");
-  }
-
-  process.stdout.write(line + "\n");
-});
-
-function spawnWrappedMCPServer() {
-  if (!realCommand) {
-    console.error("Usage: node mcp-proxy.js <real-command> <real-args...>");
-    process.exit(1);
-  }
-
-  const child = spawn(realCommand, realArgs, {
-    stdio: ["pipe", "pipe", "inherit"],
-    env: process.env,
-  });
-  return child;
+if (!realCommand) {
+  console.error("Usage: mcpwrapped --visible_tools=a,b realCmd realArgs...");
+  process.exit(1);
 }
 
-function safeParse(json: string) {
-  try {
-    return JSON.parse(json);
-  } catch {
-    return null;
+// Start wrapped server
+const child = spawn(realCommand, realArgs, {
+  stdio: ["pipe", "pipe", "inherit"],
+  env: process.env,
+});
+
+child.on("exit", (code) => process.exit(code));
+
+// RAW FORWARD: client → server
+process.stdin.on("data", (chunk) => {
+  child.stdin.write(chunk);
+});
+
+// BUFFERING FOR SERVER OUTPUT: server → client
+let buffer = "";
+
+/**
+ * Parse incoming stdout chunks as NDJSON while preserving trailing buffer.
+ * parseNdjsonChunk returns the updated buffer and an array of records:
+ *   { line, msg } where msg is the parsed JSON object or undefined for non-JSON/blank lines.
+ */
+child.stdout.on("data", (chunk) => {
+  const result = parseNdjsonChunk(buffer, chunk);
+  buffer = result.buffer;
+
+  for (const { line, msg } of result.records) {
+    // Non-JSON or blank lines — pass through unchanged (blank lines are skipped)
+    if (msg === undefined) {
+      if (line.trim()) process.stdout.write(line + "\n");
+      continue;
+    }
+
+    // === FILTER TOOL ===
+    if (allowedTools && msg?.result) {
+      const allowed = allowedTools.split(",").map((t) => t.trim());
+
+      if (msg.result.capabilities?.tools) {
+        const filtered: Record<string, any> = {};
+        for (const [name, def] of Object.entries(
+          msg.result.capabilities.tools
+        )) {
+          if (allowed.includes(name)) {
+            filtered[name] = def;
+          }
+        }
+        msg.result.capabilities.tools = filtered;
+      }
+
+      // Legacy array form
+      if (Array.isArray(msg.result.tools)) {
+        msg.result.tools = msg.result.tools.filter((t: { name: string }) =>
+          allowed.includes(t.name)
+        );
+      }
+
+      process.stdout.write(JSON.stringify(msg) + "\n");
+      continue;
+    }
+
+    // Forward everything else
+    process.stdout.write(line + "\n");
   }
-}
+});
