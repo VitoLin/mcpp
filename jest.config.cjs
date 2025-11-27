@@ -10,6 +10,7 @@ module.exports = {
   coverageProvider: "v8",
   collectCoverageFrom: ["src/**/*.{ts,tsx,js,jsx}", "!src/**/*.d.ts"],
   coverageDirectory: "coverage",
+  coverageReporters: ["text", "lcov", "json-summary"],
   coverageThreshold: {
     global: {
       branches: 80,

@@ -1,4 +1,4 @@
-import { parseNdjsonChunk } from "../src/lib/ndjson";
+import { parseNdjsonChunk } from "../../src/lib/ndjson";
 
 describe("parseNdjsonChunk", () => {
   test("parses JSON lines and returns parsed msg", () => {

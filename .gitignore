@@ -4,4 +4,8 @@
 node_modules/
 *-workspace/
 test*.json
-coverage/
+
+# coverage badge
+coverage/*
+!coverage
+!coverage/badges.svg

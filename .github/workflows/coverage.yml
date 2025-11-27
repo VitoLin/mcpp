@@ -1,0 +1,47 @@
+name: Coverage
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run tests with coverage
+        run: npm test
+
+      - name: Create Coverage Badge
+        uses: jaywcjlove/coverage-badges-cli@v2.2.0
+        with:
+          style: flat
+          source: coverage/coverage-summary.json
+          output: coverage/badges.svg
+          jsonPath: total.lines.pct
+
+      - name: Commit coverage badge
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git add coverage/badges.svg
+          git commit -m "Update coverage badge" || echo "No changes to commit"
+          git push

@@ -1,4 +1,4 @@
-import { parseFlags } from "../src/lib/parseFlags";
+import { parseFlags } from "../../src/lib/parseFlags";
 
 describe("parseFlags", () => {
   test("extracts known flags and filters them out of args", () => {

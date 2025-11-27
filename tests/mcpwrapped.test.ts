@@ -3,10 +3,7 @@ import { EventEmitter } from "events";
 
 describe("mcpwrapped (CLI wrapper)", () => {
   const originalArgv = process.argv.slice();
-
-  //
   // Build a realistic fake child_process.spawn result.
-  //
   function makeFakeChild() {
     const child = new EventEmitter() as any;
 
